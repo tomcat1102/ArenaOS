@@ -1,4 +1,4 @@
-;   ArenaOS boot sector. 5.31
+;  ArenaOS boot loader. 5.31
 
 ; 0x100 = 256B
 ; 0x400 = 1KB
@@ -8,13 +8,10 @@
 ; 0xA0000 = 640KB (640KB ~ 1MB is for BIOS rom and video ram) 
 ; 0x100000 = 1MB 
 
-BOOT_SEG equ 0x07c0
-INIT_SEG equ 0x9000
-
+%include "boot.inc"
 
 [bits 16]
 global _start
-global BOOT_DRIVE
 
 _start:
     ; Move boot sector from 0x7c00 to 0x9000, 64 KB way before BIOS & video ram.
@@ -42,45 +39,54 @@ go: mov ax, cs
     ; bootloader. Since 'dl'may be changed later, it should be saved asap.
     mov [BOOT_DRIVE], dl    ; dl should be 0x80 if booted from hard disk
 
-    ; Print loading message
-    mov bp, MSG_LOAD
-    mov cx, 21
+
+    ; Load setup sector in 0x90200 right after the boot sector 
+load_setup:    ; TODO modify SETUP_LEN if need to
+    mov ax, 0x0200 + SETUP_LEN  ; ah: read, al: nr sectors to read
+    mov dh, 0x00    ; 
+    mov dl, [BOOT_DRIVE]
+    mov cx, 0x0002
+    mov bx, 0x0200
+    int 0x13
+    jnc ok_load_setup
+    ; Just in case there is load error, try at most LOAD_TRY(3) times. 
+    ; However, this cannot happen normally after testing
+    dec byte [LOAD_TRY]
+    cmp byte [LOAD_TRY], 0
+    jg load_setup
+
+    mov bp, MSG_BAD_LOAD
+    mov cx, 18
     call print
+    jmp $
+
+ok_load_setup:
+
+    ; Now load the kernel
+    mov bp, MSG_LOAD_KERNEL
+    mov cx, 19
+    call print
+
+    ; ... load the kernel
+
+    jmp SETUP_SEG:0000
 
     jmp $
 
-; ------------------------PRINT A C-LIKE STRING--------------------------------
-; input: 
-;   'bp' address of the null-ended string to be printed
-;   'cx' string length
-print:
-    push ax    
-    ; save parameters on stack for later use
-    push bp
-    push cx
-    ; first read cursor position using int 0x10
-    mov ah, 0x03    
-    xor bh, bh      
-    int 0x10        
-    ; then print the string at the cursor position
-    pop cx          ; string length
-    pop bp          ; string address
-    mov bx, 0x0007  ; page 0, attribute 7 (normal) 0 black, 1 blue, 2 green ...
-    mov ax, 0x1301  ; write string, move cursor
-    int 0x10
-
-    pop ax
-    ret
+%include "print.asm"
 
 ; -------------------DATA AREA IN THE BOOTLOADER------------------------------
 BOOT_DRIVE:
-     db 0x0
+    db 0x0
+LOAD_TRY: 
+    db 0x3    
 
-MSG_LOAD:
-     db 0xa, 0xd            ; new line and carriage return
-     db "Loading kernel..."
-     db 0xa, 0xd
+MSG_LOAD_KERNEL:
+    db "Loading kernel...", 0xa, 0xd ; new line and carriage return
+MSG_BAD_LOAD:
+    db "Fatal load error", 0xa, 0xd
 
+    
 
 times 510 - ($ - $$) db 0   ; fill remaining space in the boot sector with 0
 dw 0xaa55                   ; boot sector magic number

@@ -1,0 +1,20 @@
+target remote localhost:1234
+set architecture i8086
+set disassembly-flavor intel
+set confirm off
+set pagination off
+directory boot
+symbol-file boot/boot_sector_init.elf
+break _start
+continue
+clear _start
+next 9 
+symbol-file boot/boot_sector.elf
+break *0x90000 + ok_load_setup
+continue
+clear *0x90000 + ok_load_setup
+symbol-file boot/setup.elf
+break *0x90200 + _setup
+continue
+clear *0x90200 + _setup
+next
