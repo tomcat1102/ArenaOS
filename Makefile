@@ -11,39 +11,44 @@ QEMU = qemu-system-i386
 
 # final output system image
 IMG = ArenaOS.img
-# image for debugmake
+# files for debug
+DEBUG_FILES = boot_sector.elf boot_sector_init.elf
 IMG_ELF = ArenaOS.img.elf
 
 # default make target
 $(IMG): boot/boot_sector.bin
 	cat $^ > $@
 
+# targets for debug files
+boot_sector.elf: boot/boot_sector.o
+	$(LD) -o $@ -melf_i386 -Ttext 0x0000 $^
 
-$(IMG_ELF): boot/boot_sector.o
+boot_sector_init.elf: boot/boot_sector.o
 	$(LD) -o $@ -melf_i386 -Ttext 0x7c00 $^
-	$(LD) -o $@.abs -melf_i386 -Ttext 0x0000 $^
 
+# general rules
 %.bin:	%.asm
 	nasm $< -f bin -o $@
 
 %.o: %.asm
 	nasm $< -f elf32 -F dwarf -g -o $@
 
+# main targets
 run: $(IMG)
 	$(QEMU) -drive format=raw,file=$(IMG)
 
-debug: $(IMG) $(IMG_ELF)
+debug: $(IMG) $(DEBUG_FILES)
 	$(QEMU) -s -S -drive format=raw,file=$(IMG) &
 	$(GDB) -ex "target remote localhost:1234" \
 	-ex "set architecture i8086" \
 	-ex "set disassembly-flavor intel" \
 	-ex "set confirm off" \
-	-ex "symbol-file $(IMG_ELF)" \
+	-ex "symbol-file boot_sector_init.elf" \
 	-ex "print _start" \
 	-ex "break _start" \
 	-ex "continue" \
 	-ex "next 9" \
-	-ex "symbol-file $(IMG_ELF).abs" \
+	-ex "symbol-file boot_sector.elf" \
 
 	
 clean:
