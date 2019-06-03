@@ -8,7 +8,7 @@ boot_sector.bin: boot_sector.asm print.asm
 setup.bin: setup.asm print.asm
 	nasm $< -f bin -o $@
 
-head.bin: head.s print.asm
+head.bin: head.asm print.asm
 	nasm $< -f bin -o $@
 
 # targets for debug

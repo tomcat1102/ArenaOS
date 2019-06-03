@@ -62,13 +62,36 @@ load_setup:    ; TODO modify SETUP_LEN if need to
 
 ok_load_setup:
     ; Now load the kernel
-
     mov bp, MSG_LOAD_KERNEL
     mov cx, 19
     call print
+    ; Set max tries to load
+    mov byte [LOAD_TRY], 3
+    ; TODO now kernel is just the size of a sector, so loading is simple  
+    ; here, just like we load the setup sector
+    mov ax, 0x1000
+    mov es, ax          ; setup 'es'
 
-    ; ... load the kernel
+load_kernel:    
+    mov ax, 0x0200 + SYS_LEN
+    mov dh, 0x00
+    mov dl, [BOOT_DRIVE]
+    mov cx, 0x0003  ; kernel will be loaded at 0x10000 so as not to overwrite
+    mov bx, 0x0000  ; BIOS int table at 0x00000 cause we still need it later.
+    int 0x13        ; In the future, kernel size won't surpass 0x80000(512KB)
+    jnc ok_load_kernel
+    dec byte [LOAD_TRY]
+    cmp byte [LOAD_TRY], 0
+    jg load_kernel
 
+    mov ax, cs
+    mov es, ax
+    mov bp, MSG_BAD_LOAD
+    mov cx, 18
+    call print 
+    jmp $
+
+ok_load_kernel:
     jmp SETUP_SEG:0000
 
     jmp $

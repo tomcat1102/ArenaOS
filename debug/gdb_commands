@@ -17,6 +17,10 @@ symbol-file boot/setup.elf
 break *0x90200 + _setup
 continue
 clear *0x90200 + _setup
-break *0x90200 + breakpoint
+break *0x90200 + end_move
 continue
-clear *0x90200 + breakpoint
+clear *0x90200 + end_move
+stepi 6
+symbol-file boot/head.elf
+stepi
+

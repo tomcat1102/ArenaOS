@@ -77,14 +77,14 @@ _setup:
     mov cx, 0x10
     rep movsb
 
-    ; Check if disk 1 exists, and clear its info if not available (should do)
+    ; Check if disk 1 exists
     mov ah, 0x15
     mov dl, 0x81
     int 0x13
     jc  no_disk1
     cmp ah, 3       ; Is it a fixed disk, not diskette ?
     je  is_disk1
-no_disk1:
+no_disk1:           ; clear disk 1 info if the disk is not available
     mov ax, INIT_SEG
     mov es, ax
     mov di, 0x0090
@@ -100,8 +100,41 @@ is_disk1:
     mov cx, 38
     call print
 
-breakpoint:
-    jmp $
+    
+    cli             ; disable interrupts
+
+    ; Move kernel to 0x00000.
+
+    ; Actually we move whatever in 0x10000 ~ 0x90000 to 0x0000 ~ 0x80000, each 
+    ; time we move 64KB so as not to cross segment boundary.
+    ; BIOS int table at 0x00000 will be overwritten, however, we no longer need 
+    ; it. Later we'll set up our own interrupt table in 32bit protected mode.
+
+    mov ax, 0x0000
+    cld                 ; clear direction flag, move forward
+do_move:                
+    mov es, ax
+    add ax, 0x1000
+    cmp ax, 0x9000      ; is move over ?
+    je  end_move
+    mov ds, ax
+    xor di, di
+    xor si, si
+    mov cx, 0x8000      ; 64KB
+    rep movsw
+    jmp do_move
+
+end_move:
+    mov ax, SETUP_SEG   ; I forget this, made the same mistake as that of Linus
+    mov ds, ax          ; in Linux 0.11
+
+    lgdt [gdt_48]       ; Load temporary gdt & idt descriptor before entering 
+    lidt [idt_48]       ; protected mode. Reset them later in head.asm
+
+    mov ax, 0x0001
+    lmsw ax             ; set PE flag, enable Protected Mode
+
+    jmp 8:0    ; 32bit world is waiting for us, let's jump into it!
 
 %include "print.asm"
 
@@ -109,5 +142,31 @@ MSG_SETUP_OK:
     db "Setup ok, entering protected mode..."
     db 0xa, 0xd
 
-;times 512 - ($ - $$) db 0 ; fill this sector with 0
+gdt_start:
+    ; dummy segment selector
+    dw 0, 0, 0, 0       
+
+    ; code segment selector
+    dw 0x07FF           ; 8MB = 2048 * 4KB, segment length
+    dw 0x0000           ; 0x00000 = segment base
+    db 0x00, 0x9A       ; 0x00 = segment base, 0x9A = code read/exec
+    db 0xC0, 0x00       ; 0xC = 4 flag bits, gran=4096, 386, 
+                        ; 0x0 = segment length, 0x00 = segment base
+    ; data segment selector
+    dw 0x07FF           ; 8MB = 2048 * 4KB, segment length
+    dw 0x0000           ; 0x00000 = segment base
+    db 0x00, 0x92       ; 0x00 = segment base, 0x92 = data read/write
+    db 0xC0, 0x00       ; 0xC = 4 flag bits, gran=4096, 386, 
+gdt_end:                ; 0x0 = segment length, 0x00 = segment base
+
+
+gdt_48:
+    dw gdt_end - gdt_start
+    dd 0x90200 + gdt_start
+
+idt_48:
+    dw 0x01
+    dd 0x0000
+
+times 512 - ($ - $$) db 0 ; fill this sector with 0
 
