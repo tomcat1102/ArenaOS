@@ -6,7 +6,7 @@ CFLAGS = -gcc
 QEMU = qemu-system-i386
 
 IMG = ArenaOS.img
-BOOT_BIN = boot/boot_sector.bin boot/setup.bin
+BOOT_BIN = boot/boot_sector.bin boot/setup.bin boot/head.bin
 
 # default make target
 .defautl: all
@@ -28,11 +28,11 @@ $(BOOT_BIN): boot
 
 # main targets
 run: $(IMG)
-	$(QEMU) -drive format=raw,file=$(IMG)
+	$(QEMU) -m size=16 -mem-prealloc -drive format=raw,file=$(IMG)
 
 debug: $(IMG) elf
-	$(QEMU) -s -S -drive format=raw,file=$(IMG) &
-	$(GDB) --command=debug/gdb_commands
+	$(QEMU) -m size=16 -mem-prealloc -s -S -drive format=raw,file=$(IMG) & 
+	$(GDB) --silent --command=debug/gdb_commands
 	
 clean:
 	rm -rf $(IMG) $(IMG_ELF)

@@ -43,10 +43,10 @@ go: mov ax, cs
     ; Load setup sector in 0x90200 right after the boot sector 
 load_setup:    ; TODO modify SETUP_LEN if need to
     mov ax, 0x0200 + SETUP_LEN  ; ah: read, al: nr sectors to read
-    mov dh, 0x00    ; 
-    mov dl, [BOOT_DRIVE]
-    mov cx, 0x0002
-    mov bx, 0x0200
+    mov dh, 0x00                ; dh: head
+    mov dl, [BOOT_DRIVE]        ; dl: drive
+    mov cx, 0x0002              ; ch: track, cl: starting sector 
+    mov bx, 0x0200              ; bx: read to es:bx
     int 0x13
     jnc ok_load_setup
     ; Just in case there is load error, try at most LOAD_TRY(3) times. 
@@ -61,8 +61,8 @@ load_setup:    ; TODO modify SETUP_LEN if need to
     jmp $
 
 ok_load_setup:
-
     ; Now load the kernel
+
     mov bp, MSG_LOAD_KERNEL
     mov cx, 19
     call print

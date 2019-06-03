@@ -2,7 +2,7 @@
 ; input: 
 ;   'bp' address of the null-ended string to be printed
 ;   'cx' string length
-print: ;                        ; TODO print should scrool if no space is left
+print: ;                        ; TODO print should scroll if no space is left
     push ax    
     ; save parameters on stack for later use
     push bp
