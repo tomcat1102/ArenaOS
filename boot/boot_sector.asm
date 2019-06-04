@@ -37,79 +37,142 @@ go: mov ax, cs
     ; Save boot drive from BIOS. 
     ; 'dl' stores boot drive number after BIOS transfered the control to our 
     ; bootloader. Since 'dl'may be changed later, it should be saved asap.
-    mov [BOOT_DRIVE], dl    ; dl should be 0x80 if booted from hard disk
+    mov [boot_drive], dl    ; dl should be 0x80 if booted from hard disk
 
 
     ; Load setup sector in 0x90200 right after the boot sector 
 load_setup:    ; TODO modify SETUP_LEN if need to
     mov ax, 0x0200 + SETUP_LEN  ; ah: read, al: nr sectors to read
     mov dh, 0x00                ; dh: head
-    mov dl, [BOOT_DRIVE]        ; dl: drive
+    mov dl, [boot_drive]        ; dl: drive
     mov cx, 0x0002              ; ch: track, cl: starting sector 
     mov bx, 0x0200              ; bx: read to es:bx
     int 0x13
-    jnc ok_load_setup
+    jnc end_load_setup
     ; Just in case there is load error, try at most LOAD_TRY(3) times. 
     ; However, this cannot happen normally after testing
-    dec byte [LOAD_TRY]
-    cmp byte [LOAD_TRY], 0
+    dec byte [load_try]
+    cmp byte [load_try], 0
     jg load_setup
 
-    mov bp, MSG_BAD_LOAD
+    mov bp, msg_bad_load
     mov cx, 18
     call print
-    jmp $
+end_load_setup:
 
-ok_load_setup:
-    ; Now load the kernel
-    mov bp, MSG_LOAD_KERNEL
+
+    ; ***************** Prepare to load kernel ******************************
+    mov bp, msg_load_kernel
     mov cx, 19
     call print
-    ; Set max tries to load
-    mov byte [LOAD_TRY], 3
-    ; TODO now kernel is just the size of a sector, so loading is simple  
-    ; here, just like we load the setup sector
-    mov ax, 0x1000
-    mov es, ax          ; setup 'es'
 
-load_kernel:    
-    mov ax, 0x0200 + SYS_LEN
-    mov dh, 0x00
-    mov dl, [BOOT_DRIVE]
-    mov cx, 0x0003  ; kernel will be loaded at 0x10000 so as not to overwrite
-    mov bx, 0x0000  ; BIOS int table at 0x00000 cause we still need it later.
-    int 0x13        ; In the future, kernel size won't surpass 0x80000(512KB)
-    jnc ok_load_kernel
-    dec byte [LOAD_TRY]
-    cmp byte [LOAD_TRY], 0
-    jg load_kernel
+    ; we need to know nr of sectors/track cause we aren't just loading a sector
+    ; from the kernel, but the whole kernel whose size may reach up to 512Kb.
 
+    mov dl, [boot_drive]
+    mov ah, 0x08
+    int 0x13
+
+    and cl, 00111111b   
+    mov [sectors], cl
+
+    ; set read destination to es:bx, 0x10000
+    mov ax, SYS_SEG
+    mov es, ax
+    xor bx, bx      
+
+    ; [sectors], [sread], ..., WILL DS CHANGED ? IF SO, use cs:[sectors] !!!!!!
+
+rp_read:
+    mov ax, es
+    cmp ax, END_SEG
+    jb  ok1_read
+    jmp end_load_kernel
+ok1_read:
+    mov ax, [sectors]   ; ax: nr sectors per track
+    sub ax, [sread]     ; ax: sectors to read in current track
+    mov cx, ax          ; cx = ax
+    shl cx, 9           ; cx: bytes read for ax sectors
+    add cx, bx          ; cx: new segment offset after reading cx bytes at bx
+    jnc ok2_read        ; segment not cross 64KB boundary, read the track
+    je  ok2_read        
+    xor ax, ax          ; segment will cross boundary, read as much as posiible
+    sub ax, bx          ; ax: bytes to read at most without crossing
+    shr ax, 9           ; ax: sectors to read at most without crossing
+ok2_read:
+    call read_track
+    mov cx, ax          ; cx: sectors read
+    add ax, [sread]     ; ax: sector number in current track
+    cmp ax, [sectors]   ; is the whole track in current head read ?
+    jne ok3_read
+    mov ax, 0           ; next read starts at first sector
+    inc word [head]     ; yes, read the track in next head
+    cmp word [head], 15      
+    jl ok3_read         ; if not last head, ok
+    mov word [head], 0  ; if last head, read the next track on head 0
+    inc word [track]
+ok3_read:
+    mov [sread], ax     ; save sread
+    shl cx, 9           ; cx: bytes read
+    add bx, cx          ; bx: new segment offset 
+    jnc rp_read
+    mov ax, es          ; if 64 KB, adjust es:bx
+    add ax, 0x1000
+    mov es, ax
+    xor bx, bx
+    jmp rp_read
+
+read_track:             ; in ax: sectors to read
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov dx, [track]      
+    mov cx, [sread]
+    inc cx              ; cl: 5~0 starting sector number
+    mov ch, dl          ; ch: track number
+    mov dx, [head]
+    mov dh, dl          ; dh: head number
+    mov dl, [boot_drive]; dl: drive number
+    mov ah, 0x2         ; AH: 2, read
+    int 0x13
+    jc bad_read
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+
+bad_read:
+    nop
     mov ax, cs
     mov es, ax
-    mov bp, MSG_BAD_LOAD
+    mov bp, msg_bad_load
     mov cx, 18
     call print 
     jmp $
 
-ok_load_kernel:
+    ; ************************Kernel load finished **************************
+end_load_kernel:
     jmp SETUP_SEG:0000
-
     jmp $
 
 %include "print.asm"
 
 ; -------------------DATA AREA IN THE BOOTLOADER------------------------------
-BOOT_DRIVE:
-    db 0x0
-LOAD_TRY: 
-    db 0x3    
+boot_drive  db 0x0
+load_try    db 0x3    
+; Variables needed to record infomation for loading kernel image
+sectors dw 0x0
+sread   dw 0x1 + SETUP_LEN
+head    dw 0
+track   dw 0
 
-MSG_LOAD_KERNEL:
-    db "Loading kernel...", 0xa, 0xd ; new line and carriage return
-MSG_BAD_LOAD:
-    db "Fatal load error", 0xa, 0xd
-
-    
+msg_load_kernel db "Loading kernel...", 0xa, 0xd ; new line and carriage return
+msg_bad_load    db "Fatal load error", 0xa, 0xd
+   
 
 times 510 - ($ - $$) db 0   ; fill remaining space in the boot sector with 0
 dw 0xaa55                   ; boot sector magic number

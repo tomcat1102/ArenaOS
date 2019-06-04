@@ -6,7 +6,7 @@ CFLAGS = -gcc
 QEMU = qemu-system-i386
 
 IMG = ArenaOS.img
-BOOT_BIN = boot/boot_sector.bin boot/setup.bin boot/head.bin
+BOOT_BIN = boot/boot_sector.bin boot/setup.bin boot/head.bin boot/fake_kernel.bin
 
 # default make target
 .defautl: all
@@ -22,8 +22,9 @@ elf:
 $(IMG): $(BOOT_BIN)
 	cat $(BOOT_BIN) > $@
 
+# Magic, don't delete '@' 
 $(BOOT_BIN): boot
-
+	@
 
 
 # main targets

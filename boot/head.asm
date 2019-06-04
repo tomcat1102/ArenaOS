@@ -25,9 +25,6 @@ times 1024 db 0xBB
 times 1024 db 0xCC
 times 1024 db 0xDD
 
-kernel_stack:
-    times 4096 db 0xFF
-
 kernel_gdt:
     dq 0x0000000000000000
     dq 0x00c09a0000000fff
@@ -36,6 +33,4 @@ kernel_gdt:
     times 252 dq 0
 kernel_idt:
     times 256 dq 0    
-
-
 
