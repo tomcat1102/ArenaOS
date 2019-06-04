@@ -12,8 +12,6 @@ startup_32:
     mov fs, ax
     mov gs, ax
 
-    ; Cannot print anymore! How to better debug with print() ?
-
     jmp $
 
 MSG_HEAD:

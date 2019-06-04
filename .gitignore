@@ -3,3 +3,5 @@ ArenaOS.img
 *.bin
 *.o
 *.jpeg
+.*
+kernel/fake_kernel

@@ -1,6 +1,6 @@
 .default: all
 
-all: boot_sector.bin setup.bin head.bin fake_kernel.bin
+all: boot_sector.bin setup.bin head.bin
 # targets for buiding kernel
 boot_sector.bin: boot_sector.asm print.asm
 	nasm $< -f bin -o $@
@@ -13,11 +13,7 @@ head.bin: head.asm print.asm
 
 
 # targets for debug
-debug:	boot_sector.elf boot_sector_init.elf setup.elf head.elf fake_kernel.bin
-
-
-fake_kernel.bin: fake_kernel.asm
-	nasm $< -f bin -o $@
+debug:	boot_sector.elf boot_sector_init.elf setup.elf head.elf 
 
 boot_sector.o: boot_sector.asm print.asm
 	nasm $< -f elf32 -F dwarf -g -o $@

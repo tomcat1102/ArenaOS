@@ -2,32 +2,52 @@ CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
 LD = /usr/local/i386elfgcc/bin/i386-elf-ld
 GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
 
-CFLAGS = -gcc
 QEMU = qemu-system-i386
 
+INCLUDE = $(shell pwd)/include
+CFLAGS = -Wall -g -I$(INCLUDE) -ffreestanding
+
 IMG = ArenaOS.img
-BOOT_BIN = boot/boot_sector.bin boot/setup.bin boot/head.bin boot/fake_kernel.bin
+BOOT_BIN = boot/boot_sector.bin boot/setup.bin boot/head.bin 
+OS_BIN = os.bin
+
+INIT_OBJ = init/main.o 
+KERNEL_OBJ = kernel/print.o
+
+# export variables to make in each directory
+export CC
+export LD
+export CFLAGS
+export INCLUDE
 
 # default make target
-.defautl: all
-
 all: $(IMG) 
 
 boot:
 	cd boot && make 
 
-elf:
+init:
+	cd init && make
+
+kernel:
+	cd kernel && make
+
+elf: init kernel
 	cd boot && make debug
+	$(LD) -o os.elf -Ttext=0x2000 $(INIT_OBJ) $(KERNEL_OBJ)
 
-$(IMG): $(BOOT_BIN)
-	cat $(BOOT_BIN) > $@
-
-# Magic, don't delete '@' 
+$(IMG): $(BOOT_BIN) $(OS_BIN) kernel/fake_kernel
+	cat $^ > $@
 $(BOOT_BIN): boot
 	@
+$(OS_BIN): $(INIT_OBJ) $(KERNEL_OBJ)
+	$(LD) -o $@ -Ttext=0x2000 $^ --oformat binary
+$(INIT_OBJ): init
+	@
+$(KERNEL_OBJ): kernel
+	@
 
-
-# main targets
+# Main make targets
 run: $(IMG)
 	$(QEMU) -m size=16 -mem-prealloc -drive format=raw,file=$(IMG)
 
@@ -36,7 +56,9 @@ debug: $(IMG) elf
 	$(GDB) --silent --command=debug/gdb_commands
 	
 clean:
-	rm -rf $(IMG) $(IMG_ELF)
-	rm -rf boot/*.bin boot/*.o boot/*.elf
+	rm -rf ArenaOS.img os.bin os.elf
+	rm -rf boot/*.bin boot/*.o boot/*.elf boot/.depend
+	rm -rf init/*.o init/*.elf
+	rm -rf kernel/*.o kernel/*.elf
 
-.PHONY: clean debug boot
+.PHONY: clean debug boot init kernel

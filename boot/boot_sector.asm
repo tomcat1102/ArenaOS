@@ -81,8 +81,6 @@ end_load_setup:
     mov es, ax
     xor bx, bx      
 
-    ; [sectors], [sread], ..., WILL DS CHANGED ? IF SO, use cs:[sectors] !!!!!!
-
 rp_read:
     mov ax, es
     cmp ax, END_SEG
