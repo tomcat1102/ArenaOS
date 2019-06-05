@@ -11,12 +11,14 @@ long variable = 0xDDCCBBAA;
 
 void print();
 
-void main() {
+int main() {
     //long *esp = stack_start.esp;
     long address = (long)&variable;
-    long val = 1;
+    long val = 0xAAAABBBB;
+    user_stack[PAGE_SIZE>>2] = 0xEFBEcccc;
     print();
+    return val;
 }
 
-// TODO C linkage. Code seems good, but data(user_stakc) address is bad
+// TODO C linkage. Code seems good, but addresses of global data are bad
 // Need test code, and then data address !!!

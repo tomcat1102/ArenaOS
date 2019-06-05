@@ -1,4 +1,5 @@
 ArenaOS.img
+core
 *.elf
 *.bin
 *.o

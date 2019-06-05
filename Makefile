@@ -40,12 +40,16 @@ $(IMG): $(BOOT_BIN) $(OS_BIN) kernel/fake_kernel
 	cat $^ > $@
 $(BOOT_BIN): boot
 	@
-$(OS_BIN): $(INIT_OBJ) $(KERNEL_OBJ)
-	$(LD) -o $@ $^ --oformat binary --entry startup_32
 $(INIT_OBJ): init
 	@
 $(KERNEL_OBJ): kernel
 	@
+
+# I quit, I don't know why bss cannot be allocated, nor can I control it.
+# Now bss section won't appearing in the OS binary as strings of zeros,
+# which is anyway pretty good. \(v.v)/
+$(OS_BIN): $(INIT_OBJ) $(KERNEL_OBJ)
+	$(LD) --script config/linker.ld -o $@ $^  --oformat binary
 
 # Main make targets
 run: $(IMG)
@@ -53,10 +57,10 @@ run: $(IMG)
 
 debug: $(IMG) elf
 	$(QEMU) -m size=16 -mem-prealloc -s -S -drive format=raw,file=$(IMG) & 
-	$(GDB) --silent --command=debug/gdb_commands
+	$(GDB) --silent --command=config/gdb_commands
 	
 clean:
-	rm -rf ArenaOS.img os.bin os.elf
+	rm -rf ArenaOS.img os.bin os.elf core
 	rm -rf boot/*.bin boot/*.o boot/*.elf boot/.depend
 	rm -rf init/*.o init/*.elf
 	rm -rf kernel/*.o kernel/*.elf

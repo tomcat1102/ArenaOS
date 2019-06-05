@@ -17,7 +17,14 @@ startup_32:
     mov ss, ax
     mov esp, 0x90000    ; stack top at INIT_SEG 0x9000, note the zero at end
 
-    jmp  8:0x2000       ; TODO try call later, main address should be saved 
+    ; Note 
+    mov eax, 0x2000
+    call eax       ; TODO try call later, main address should be saved 
+    nop
+    nop 
+
+    jmp $
+
 
 times 1024 - ($ - $$) db 0xAA
 times 1024 db 0xBB
