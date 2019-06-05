@@ -1,0 +1,2 @@
+# dissembly code in main.c
+ndisasm -u -e 0x2000 os.bin | more

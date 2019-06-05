@@ -5,13 +5,13 @@ GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
 QEMU = qemu-system-i386
 
 INCLUDE = $(shell pwd)/include
-CFLAGS = -Wall -g -I$(INCLUDE) -ffreestanding
+CFLAGS = -Wall -g -I$(INCLUDE) -ffreestanding -Wno-unused-variable
 
 IMG = ArenaOS.img
-BOOT_BIN = boot/boot_sector.bin boot/setup.bin boot/head.bin 
+BOOT_BIN = boot/boot_sector.bin boot/setup.bin
 OS_BIN = os.bin
 
-INIT_OBJ = init/main.o 
+INIT_OBJ = init/head.o init/main.o 
 KERNEL_OBJ = kernel/print.o
 
 # export variables to make in each directory
@@ -32,16 +32,16 @@ init:
 kernel:
 	cd kernel && make
 
-elf: init kernel
+elf: 
 	cd boot && make debug
-	$(LD) -o os.elf -Ttext=0x2000 $(INIT_OBJ) $(KERNEL_OBJ)
+	$(LD) -o os.elf -Ttext=0x0000 $(INIT_OBJ) $(KERNEL_OBJ)
 
 $(IMG): $(BOOT_BIN) $(OS_BIN) kernel/fake_kernel
 	cat $^ > $@
 $(BOOT_BIN): boot
 	@
 $(OS_BIN): $(INIT_OBJ) $(KERNEL_OBJ)
-	$(LD) -o $@ -Ttext=0x2000 $^ --oformat binary
+	$(LD) -o $@ $^ --oformat binary --entry startup_32
 $(INIT_OBJ): init
 	@
 $(KERNEL_OBJ): kernel

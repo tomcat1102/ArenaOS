@@ -1,9 +1,11 @@
 ;   head.s -- head of the kernel. 6.3
 
-%include "boot.inc"
+%include "../boot/boot.inc"
 
 [bits 32]
 global startup_32
+extern stack_start
+extern main
 
 startup_32:
     mov ax, 0x10       ; load data segment selector to each segment registers
@@ -11,12 +13,11 @@ startup_32:
     mov es, ax
     mov fs, ax
     mov gs, ax
+    ; TODO have to set temp stack to debug main(), which uses stack of course.
+    mov ss, ax
+    mov esp, 0x90000    ; stack top at INIT_SEG 0x9000, note the zero at end
 
-    jmp $
-
-MSG_HEAD:
-    db "Enter kernel head: "
-    db 0xa, 0xd
+    jmp  8:0x2000       ; TODO try call later, main address should be saved 
 
 times 1024 - ($ - $$) db 0xAA
 times 1024 db 0xBB
