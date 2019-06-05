@@ -5,7 +5,7 @@ long user_stack[PAGE_SIZE >> 2];
 struct {
     long *esp;
     short ss;
-} __attribute__((packed)) stack_start = { &user_stack[PAGE_SIZE >> 2], 0xFB};
+} __attribute__((packed)) stack_start = { &user_stack[PAGE_SIZE >> 2], 0x10};
 
 long variable = 0xDDCCBBAA;
 
@@ -20,5 +20,3 @@ int main() {
     return val;
 }
 
-// TODO C linkage. Code seems good, but addresses of global data are bad
-// Need test code, and then data address !!!

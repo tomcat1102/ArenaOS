@@ -13,15 +13,12 @@ startup_32:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    ; TODO have to set temp stack to debug main(), which uses stack of course.
-    mov ss, ax
-    mov esp, 0x90000    ; stack top at INIT_SEG 0x9000, note the zero at end
+    lss esp, [stack_start]  ; set protected mode stack before calling main()
 
-    ; Note 
-    mov eax, 0x2000
-    call eax       ; TODO try call later, main address should be saved 
-    nop
-    nop 
+
+    mov eax, main       ; near call in same code seg, absolute indirect via eax
+    call eax            ; main is far away from start_32, can't just call main. 
+
 
     jmp $
 
