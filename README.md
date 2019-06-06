@@ -1,4 +1,4 @@
-# ArenaOS
+# ArenaOS (Occupied till 6.12, Have no time to write code, hurry up!!!)
 I've always wondered why not write an OS from scratch, since I've read so much OS code and I'm tired of it. Now here comes it! It's like linux 0.11 and the one in https://github.com/cfenollosa/os-tutorial but not the exactly the same. 
 
 ## Note
