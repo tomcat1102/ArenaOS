@@ -4,5 +4,6 @@ core
 *.bin
 *.o
 *.jpeg
+*.txt
 .*
 kernel/fake_kernel

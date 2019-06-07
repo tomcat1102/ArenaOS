@@ -57,7 +57,7 @@ run: $(IMG)
 
 debug: $(IMG) elf
 	$(QEMU) -m size=16 -mem-prealloc -s -S -drive format=raw,file=$(IMG) & 
-	$(GDB) --silent --command=config/gdb_commands
+	$(GDB) --silent --command=config/gdb_temp.txt
 	
 clean:
 	rm -rf ArenaOS.img os.bin os.elf core

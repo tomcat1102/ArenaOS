@@ -31,11 +31,11 @@ cs_go:
     xor eax, eax        ; test whether A20 is open
 A20:                    ; In read mode, A20 isn't activated and we can address
     inc eax             ; only first 1M physical memory.
-    mov [0x100000], eax ;
-    cmp eax, [0x100000] ; In protected mode, A20 should be open and we can thus
+    mov [0x000000], eax ;
+    cmp [0x100000], eax ; In protected mode, A20 should be open and we can thus
     je A20              ; address up to 4GB linear space. (16MB physical mem)
                         ;
-                        ; Loop forver If failed, can't print any error msg
+                        ; Note it seem that A20 is opened. That's great
 
     mov eax, main       ; near call in same code seg, absolute indirect via eax
     call eax            ; main is far away from start_32, can't just call main. 
