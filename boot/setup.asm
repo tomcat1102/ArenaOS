@@ -131,6 +131,28 @@ end_move:
     lgdt [gdt_48]       ; Load temporary gdt & idt descriptor before entering 
     lidt [idt_48]       ; protected mode. Reset them later in head.asm
 
+                        ; Reprogram 8259 Interrupt controller. Intel-reserved
+                        ; CPU internal interrupts occupy 0x00 to 0x1f (32 ints),
+                        ; we replace our external 15 intterupts to 0x20 to 0x2f.
+    mov al, 0x11
+    out 0x20, al        ; initializatin sequence to 8259A-1 port 0x20
+    out 0xA0, al        ; and to 8259A-2
+    mov al, 0x20
+    out 0x21, al        ; starting interrupt number 0x20 for 8259A-1
+    mov al, 0x28
+    out 0xA1, al        ; starting interrupt number 0x28 for 8259A-1
+    mov al, 0x04
+    out 0x21, al        ; 8259A-1 is master interrupt chip
+    mov al, 0x02
+    out 0xA1, al        ; 8259A-2 is slave interrupt chip
+    mov al, 0x01
+    out 0x21, al        ; 8086 mode for both chips
+    out 0xA1, al
+    mov al, 0xff
+    out 0x21, al        ; mask off all interrupts
+    out 0xA1, al
+
+
     mov ax, 0x0001
     lmsw ax             ; set PE flag, enable Protected Mode
 

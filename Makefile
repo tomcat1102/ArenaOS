@@ -12,7 +12,7 @@ BOOT_BIN = boot/boot_sector.bin boot/setup.bin
 OS_BIN = os.bin
 
 INIT_OBJ = init/head.o init/main.o 
-KERNEL_OBJ = kernel/print.o
+KERNEL_OBJ = kernel/printk.o
 
 # export variables to make in each directory
 export CC
@@ -57,7 +57,7 @@ run: $(IMG)
 
 debug: $(IMG) elf
 	$(QEMU) -m size=16 -mem-prealloc -s -S -drive format=raw,file=$(IMG) & 
-	$(GDB) --silent --command=config/gdb_temp.txt
+	$(GDB) --silent --command=config/gdb_commands.txt
 	
 clean:
 	rm -rf ArenaOS.img os.bin os.elf core
