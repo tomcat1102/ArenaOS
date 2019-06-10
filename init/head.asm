@@ -8,6 +8,7 @@ extern stack_start
 extern main
 extern printk
 
+pg_dir:
 startup_32:
     mov ax, 0x10       ; load data segment selector to each segment registers
     mov ds, ax
@@ -35,24 +36,16 @@ A20:                    ; In read mode, A20 isn't activated and we can address
     mov [0x000000], eax ;
     cmp [0x100000], eax ; In protected mode, A20 should be open and we can thus
     je A20              ; address up to 4GB linear space. (16MB physical mem)
-                        ;
-                        ; Note it seem that A20 is opened. That's great
 
-    mov eax, main       ; near call in same code seg, absolute indirect via eax
-    call eax            ; main is far away from start_32, can't just call main. 
-
-;   test whether keystrike will resuilt in ignore int invoked
-breakpoint2:
-    nop
-    sti  
-    int 0x20    
-
-    mov ax, 0
-    mov cx, 0
-    div cx
+                        ; Setup parameters for main()
+    push 0xFADE         ; env
+    push 0x7            ; argv 
+    push 0xDEED         ; argc
+    push 0              ; dummy ret addr, note main() never returns
+    push main           ; After setup_page() returns, it goes to main() :)
+                   
+    jmp setup_paging    ; Seems that A20 is opened. Great! Now enable paging.
     
-    jmp $
-
 setup_gdt:
     lgdt [gdt_descr]
     ret
@@ -77,7 +70,7 @@ rp_sidt:                ; repeat 256 times to setup int table entries
     lidt [idt_descr]
     ret
 
-ignore_int:             ; Dummy intterrupt handler that ignore interrupt
+ignore_int:             ; Dummy intterrupt handler that ignores interrupt
     push eax
     push ecx
     push edx
@@ -104,9 +97,10 @@ int_msg  db "Unknown interrupt", 0xa, 0xd, 0x0
 ; *************************ABOVE OVERWRITTEN !!! ***************************
 ;   code and data in 0x0000 ~ 0x1000 will later be overwritten as page table 
 times 4096 - ($ - $$) db 0xAA
-times 1024 dd 0x11111111
-times 1024 dd 0x22222222
-times 1024 dd 0x33333333
+pg0:  times 1024 dd 0x11111111
+pg1:  times 1024 dd 0x22222222
+pg2:  times 1024 dd 0x33333333
+pg3:  times 1024 dd 0x44444444
 
 kernel_gdt:
     dq 0x0000000000000000       ; null descriptor
@@ -124,4 +118,42 @@ idt_descr:
     dw 256 * 8 - 1
     dd kernel_idt
 
-; Always check that main() is located at 0x200C
+; setup_paging shouldn't be overwritten for page table. 
+; It can't clear itself, so it's placed here after page table and gdt & idt.
+setup_paging:           
+    mov ecx, 1024*5     ; clear page table in first 20kB
+    xor eax, eax
+    xor edi, edi
+    cld
+    rep stosd
+
+        ; Set first 4 pg_dir entris that cover 16MB mem, 7 = page preset, r/w.
+    mov word [pg_dir + 0], pg0 + 7
+    mov word [pg_dir + 4], pg1 + 7
+    mov word [pg_dir + 8], pg2 + 7
+    mov word [pg_dir + 12], pg3 + 7
+        ; Set page entries in each page table backwardly, from last page in pg3.
+    mov edi, pg3 + 4092 
+    mov eax, 0xfff007   ; = 0x100000 - 4096 + 7(page attr)
+
+    std
+setup_page:
+    stosd
+    sub eax, 0x1000     ; subtract a page size
+    jge setup_page
+
+                        ; Enable paging via cr0 & cr3 register
+    xor eax, eax
+    mov cr3, eax        ; cr3 -> address of page table
+    mov eax, cr0            
+    or eax, 0x80000000
+    mov cr0, eax        ; cr0 -> set PG bit 31
+
+breakpoint:
+    nop
+    nop
+    nop
+
+    ret                 ; will return to C main()
+
+
