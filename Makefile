@@ -13,7 +13,7 @@ BOOT_BIN = boot/boot_sector.bin boot/setup.bin
 OS_BIN = os.bin
 
 INIT_OBJ = init/head.o init/main.o 
-KERNEL_OBJ = kernel/printk.o
+KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o
 
 # export variables to make in each directory
 export CC

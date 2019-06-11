@@ -1,5 +1,5 @@
 SRC = $(shell find *.c)
-OBJECTS = $(patsubst %.c, %.o, $(SRC))
+OBJECTS = $(patsubst %.c, %.o, $(SRC)) exceptions.o
 
 all: $(OBJECTS)
 
@@ -9,3 +9,6 @@ all: $(OBJECTS)
 	$(CC) -I$(INCLUDE) -MM $^ > ./.depend
 
 include .depend
+
+exceptions.o: exceptions.asm
+	nasm $< -f elf32 -F dwarf -g -o $@

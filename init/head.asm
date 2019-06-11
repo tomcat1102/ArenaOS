@@ -1,9 +1,12 @@
-;   head.s -- head of the kernel. 6.3
+;   head.asm -- head of the kernel. 6.3
 
 %include "../boot/boot.inc"
 
 [bits 32]
 global startup_32
+global kernel_gdt
+global kernel_idt
+
 extern stack_start
 extern main
 extern printk

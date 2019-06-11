@@ -1,6 +1,8 @@
+#include "asm/system.h"
 #include "mm.h"
 
 extern int printk();
+extern void trap_init(void);
 
 #define EXT_MEM_K       (*(unsigned short*)0x90002)
 #define DRIVE_INFO_P    ((struct drive_info*)0x90080)
@@ -52,8 +54,17 @@ void main(int argc, char *argv[], char* env[]) {
     }
     
     // Init different parts of kernel, note some parts should be inited first 
-    // dute to dependency. memory should be init first!
+    // due to dependency. memory should be init first!
 
-    // mem_init()   ; Ready to init main memory area
+    // mem_init()   ; init main memory area
+    trap_init();    //init trap gates and some system gates
+
+    sti();
+
+    // Fake a divide by 0 exception to test whether the handler works !
+    __asm__("movl $0, %%edx; movl $8, %%eax; movl $0, %%ecx; div %%ecx"::);
+
+    nop();
+    nop();
 }
 
