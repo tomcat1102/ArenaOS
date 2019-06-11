@@ -160,17 +160,17 @@ end_load_kernel:
 %include "print.asm"
 
 ; -------------------DATA AREA IN THE BOOTLOADER------------------------------
-boot_drive  db 0x0
-load_try    db 0x3    
 ; Variables needed to record infomation for loading kernel image
-sectors dw 0x0
-sread   dw 0x1 + SETUP_LEN
-head    dw 0
-track   dw 0
+load_try    db 0x3
+sectors     dw 0x0
+sread       dw 0x1 + SETUP_LEN
+head        dw 0
+track       dw 0
 
 msg_load_kernel db "Loading kernel...", 0xa, 0xd ; new line and carriage return
 msg_bad_load    db "Fatal load error", 0xa, 0xd
    
 
-times 510 - ($ - $$) db 0   ; fill remaining space in the boot sector with 0
+times 509 - ($ - $$) db 0   ; fill remaining space in the boot sector with 0
+boot_drive  db 0x0          ; put boot drive number at a known address
 dw 0xaa55                   ; boot sector magic number

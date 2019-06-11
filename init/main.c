@@ -1,26 +1,59 @@
 #include "mm.h"
 
+extern int printk();
+
+#define EXT_MEM_K       (*(unsigned short*)0x90002)
+#define DRIVE_INFO_P    ((struct drive_info*)0x90080)
+#define ORIG_ROOT_DEV   (*(unsigned short*)0x901FD)
+
+struct drive_info {
+    char i[32];
+} drive;
+
 // user mode stack for task 0
 long user_stack[PAGE_SIZE >> 2];
-struct {
+
+struct { 
     long *esp;
     short ss;
 } __attribute__((packed)) stack_start = { &user_stack[PAGE_SIZE >> 2], 0x10};
 
-long variable = 0xDDCCBBAA;
+/* Memory layout:
+ * [0 - ?]              : mem for kernel, ? less than 640KB
+ * [? - 640KB]          : mem for fs cache
+ * [640KB - 1MB]        : reserved for BIOS and video ram
+ * [1MB - mem_beg]      : mem for fs cache       
+ * [mem_beg - mem_end]  : main memory area
+ */
 
-int printk();
+static long mem_beg = 0;  
+static long mem_end = 0;
 
-// We can change args to main by modifying push * in head.asm for main
 void main(int argc, char *argv[], char* env[]) {
-    //long *esp = stack_start.esp;
-    long address = (long)&variable;
-    long val = 0xAAAABBBB;
-    user_stack[PAGE_SIZE>>2] = 0xEFBEcccc;
-    printk();
-    long a = argc;  // a is '0xDEED', yes !
-    a = (long)argv;
-    a = (long)env;
-    long b = 11;
+    printk(); 
+    // ROOT_DEV = ORIG_ROOT_DEV ; super.c, load file system from ROOT_DEV
+
+    // Save drive information
+    for(int i = 0; i < 32; i ++)
+        drive.i[i] = DRIVE_INFO_P->i[i];
+
+    // Determine memory layout based on available memory size
+    mem_end = (1 << 20) + (EXT_MEM_K << 10);
+    mem_end &= 0xffff0000;              // round to page size
+    if (mem_end > 16 * 1024 * 1024) 
+        mem_end = 16 * 1024 * 1024;     // max supported mem size 16MB
+
+    if (mem_end > 12 * 1024 * 1024) {
+        mem_beg = 4 * 1024 * 1024;     
+    } else if (mem_end > 6 * 1024 * 1024) {
+        mem_beg = 2 * 1024 * 1024;
+    } else {
+        mem_beg = 1 * 1024 * 1024;
+    }
+    
+    // Init different parts of kernel, note some parts should be inited first 
+    // dute to dependency. memory should be init first!
+
+    // mem_init()   ; Ready to init main memory area
 }
 

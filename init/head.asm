@@ -97,10 +97,10 @@ int_msg  db "Unknown interrupt", 0xa, 0xd, 0x0
 ; *************************ABOVE OVERWRITTEN !!! ***************************
 ;   code and data in 0x0000 ~ 0x1000 will later be overwritten as page table 
 times 4096 - ($ - $$) db 0xAA
-pg0:  times 1024 dd 0x11111111
-pg1:  times 1024 dd 0x22222222
-pg2:  times 1024 dd 0x33333333
-pg3:  times 1024 dd 0x44444444
+pg0:  times 1024 dd 0xBBBBBBBB
+pg1:  times 1024 dd 0xCCCCCCCC
+pg2:  times 1024 dd 0xEEEEEEEE
+pg3:  times 1024 dd 0xDDDDDDDD
 
 kernel_gdt:
     dq 0x0000000000000000       ; null descriptor

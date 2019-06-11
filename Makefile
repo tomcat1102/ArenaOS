@@ -5,7 +5,8 @@ GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
 QEMU = qemu-system-i386
 
 INCLUDE = $(shell pwd)/include
-CFLAGS = -Wall -g -I$(INCLUDE) -ffreestanding -Wno-unused-variable
+CFLAGS = -std=c99 -Wall -g -I$(INCLUDE) -ffreestanding -Wno-unused-variable \
+	-fno-asynchronous-unwind-tables
 
 IMG = ArenaOS.img
 BOOT_BIN = boot/boot_sector.bin boot/setup.bin
@@ -32,9 +33,9 @@ init:
 kernel:
 	cd kernel && make
 
-elf: 
+os.elf: $(INIT_OBJ) $(KERNEL_OBJ)
 	cd boot && make debug
-	$(LD) -o os.elf -Ttext=0x0000 $(INIT_OBJ) $(KERNEL_OBJ)
+	$(LD) -o $@ --script config/linker.ld $^
 
 $(IMG): $(BOOT_BIN) $(OS_BIN) kernel/fake_kernel
 	cat $^ > $@
@@ -55,7 +56,7 @@ $(OS_BIN): $(INIT_OBJ) $(KERNEL_OBJ)
 run: $(IMG)
 	$(QEMU) -m size=16 -mem-prealloc -drive format=raw,file=$(IMG)
 
-debug: $(IMG) elf
+debug: $(IMG) os.elf
 	$(QEMU) -m size=16 -mem-prealloc -s -S -drive format=raw,file=$(IMG) & 
 	$(GDB) --silent --command=config/gdb_commands.txt
 	
@@ -65,4 +66,12 @@ clean:
 	rm -rf init/*.o init/*.elf
 	rm -rf kernel/*.o kernel/*.elf
 
-.PHONY: clean debug boot init kernel
+# Lines of code in this repo
+loc:
+	git ls-files | /usr/bin/xargs wc -l
+
+# display hex of os.img from 0x10000, skipping boot and setup sectors
+xxd:
+	xxd -s +1024 -o -1024 ArenaOS.img | more	
+
+.PHONY: loc clean debug boot init kernel

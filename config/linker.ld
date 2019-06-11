@@ -6,8 +6,5 @@ SECTIONS
     {
         *(.text)
     }
-    .data : ALIGN(8B)
-    {
-        *(.data)
-    }
+
 }
