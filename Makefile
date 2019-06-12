@@ -7,7 +7,8 @@ QEMU = qemu-system-i386
 
 INCLUDE = $(shell pwd)/include
 CFLAGS = -std=c99 -Wall -g -I$(INCLUDE) -ffreestanding -Wno-unused-variable \
-	-fno-asynchronous-unwind-tables -Wno-unused-but-set-variable
+	-fno-asynchronous-unwind-tables -Wno-unused-but-set-variable \
+	-fno-zero-initialized-in-bss
 
 IMG = ArenaOS.img
 BOOT_BIN = boot/boot_sector.bin boot/setup.bin
@@ -15,7 +16,7 @@ OS_BIN = os.bin
 
 INIT_OBJ = init/head.o init/main.o 
 KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o \
-	kernel/time.o kernel/sched.o \
+	kernel/mktime.o kernel/sched.o kernel/system_call.o \
 	kernel/chr_drv/keyboard.o kernel/chr_drv/tty_io.o kernel/chr_drv/console.o \
 	
 

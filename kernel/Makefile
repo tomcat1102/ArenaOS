@@ -18,3 +18,6 @@ include .depend
 
 exceptions.o: exceptions.asm
 	nasm $< -f elf32 -F dwarf -g -o $@
+
+system_call.o: system_call.asm
+	nasm $< -f elf32 -F dwarf -g -o $@
