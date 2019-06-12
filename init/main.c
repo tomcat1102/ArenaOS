@@ -1,4 +1,5 @@
 #include "asm/system.h"
+#include "asm/port_io.h"
 #include "mm.h"
 
 extern int printk();
@@ -59,10 +60,20 @@ void main(int argc, char *argv[], char* env[]) {
     // mem_init()   ; init main memory area
     trap_init();    //init trap gates and some system gates
 
-    sti();
+    // sti() just change interrupt flag in eflags
+    // however, we still need to unmask interrupt bits in 8259 status ports
+    sti(); 
 
     // Fake a divide by 0 exception to test whether the handler works !
     __asm__("movl $0, %%edx; movl $8, %%eax; movl $0, %%ecx; div %%ecx"::);
+
+    // TODO port read & write defines out
+    int a = 10;
+    unsigned char p21 = inb(0x21);
+    unsigned char pA1 = inb(0xA1);
+
+    // TODO chr_drv, directory output is single archive file
+    // avoid linking all objs, some can be archive obj file
 
     nop();
     nop();

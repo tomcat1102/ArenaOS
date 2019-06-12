@@ -1,7 +1,11 @@
+# Makefile for kernel
 SRC = $(shell find *.c)
 OBJECTS = $(patsubst %.c, %.o, $(SRC)) exceptions.o
 
-all: $(OBJECTS)
+all: chr_drv_obj $(OBJECTS) 
+
+chr_drv_obj:
+	cd chr_drv && make
 
 # Generate dependency file, so we don't have to specify them manually
 .depend: $(SRC)

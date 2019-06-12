@@ -1,3 +1,4 @@
+# Makefile for the whole os
 CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
 LD = /usr/local/i386elfgcc/bin/i386-elf-ld
 GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
@@ -13,7 +14,8 @@ BOOT_BIN = boot/boot_sector.bin boot/setup.bin
 OS_BIN = os.bin
 
 INIT_OBJ = init/head.o init/main.o 
-KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o
+KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o \
+		kernel/chr_drv/tty_io.o kernel/chr_drv/console.o
 
 # export variables to make in each directory
 export CC
