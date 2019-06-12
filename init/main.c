@@ -1,10 +1,11 @@
-#include "asm/system.h"
-#include "asm/port_io.h"
-#include "mm.h"
+#include <asm/system.h>
+#include <asm/port_io.h>
+#include <mm.h>
 
 extern int printk();
 extern void trap_init(void);
 extern void tty_init(void);
+extern void time_init(void);
 
 #define EXT_MEM_K       (*(unsigned short*)0x90002)
 #define DRIVE_INFO_P    ((struct drive_info*)0x90080)
@@ -61,6 +62,7 @@ void main(int argc, char *argv[], char* env[]) {
     // mem_init()   // init main memory area
     trap_init();    // init trap gates and some system gates
     tty_init();     // init tty devices and related interrupts
+    time_init();    // set kernel startup time
 
     // sti() just change interrupt flag in eflags
     // however, we still need to unmask interrupt bits in 8259 status ports
@@ -68,7 +70,7 @@ void main(int argc, char *argv[], char* env[]) {
 
     nop();
     nop();
-    
+
     while(1);
 }
 

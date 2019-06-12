@@ -2,9 +2,9 @@
 *   console.c 6.12    console device
 */
 
-#include "tty.h"
-#include "asm/system.h"
-#include "asm/port_io.h"
+#include <tty.h>
+#include <asm/system.h>
+#include <asm/port_io.h>
 
 extern void keyboard_interrupt(void);
 

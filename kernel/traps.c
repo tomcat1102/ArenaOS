@@ -1,5 +1,5 @@
-#include "asm/system.h"
-#include "asm/port_io.h"
+#include <asm/system.h>
+#include <asm/port_io.h>
 
 void divide_error(void);
 
