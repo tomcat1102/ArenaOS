@@ -1,5 +1,5 @@
-; expection.asm 6.11
-; Contains interrupt handlers for CPU exceptions, e.g divide error.
+; expections.asm 6.11
+; Contains exception handlers for CPU exceptions, e.g divide error.
 [bits 32]
 global divide_error
 

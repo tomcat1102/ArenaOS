@@ -15,7 +15,7 @@ OS_BIN = os.bin
 
 INIT_OBJ = init/head.o init/main.o 
 KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o \
-		kernel/chr_drv/tty_io.o kernel/chr_drv/console.o
+	kernel/chr_drv/keyboard.o	kernel/chr_drv/tty_io.o kernel/chr_drv/console.o 
 
 # export variables to make in each directory
 export CC
@@ -67,6 +67,7 @@ clean:
 	rm -rf boot/*.bin boot/*.o boot/*.elf boot/.depend
 	rm -rf init/*.o init/*.elf
 	rm -rf kernel/*.o kernel/*.elf
+	rm -rf kernel/chr_drv/*.o kernel/chr_drv/*.elf
 
 # Lines of code in this repo
 loc:

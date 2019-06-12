@@ -4,6 +4,7 @@
 
 extern int printk();
 extern void trap_init(void);
+extern void tty_init(void);
 
 #define EXT_MEM_K       (*(unsigned short*)0x90002)
 #define DRIVE_INFO_P    ((struct drive_info*)0x90080)
@@ -57,25 +58,17 @@ void main(int argc, char *argv[], char* env[]) {
     // Init different parts of kernel, note some parts should be inited first 
     // due to dependency. memory should be init first!
 
-    // mem_init()   ; init main memory area
-    trap_init();    //init trap gates and some system gates
+    // mem_init()   // init main memory area
+    trap_init();    // init trap gates and some system gates
+    tty_init();     // init tty devices and related interrupts
 
     // sti() just change interrupt flag in eflags
     // however, we still need to unmask interrupt bits in 8259 status ports
     sti(); 
 
-    // Fake a divide by 0 exception to test whether the handler works !
-    __asm__("movl $0, %%edx; movl $8, %%eax; movl $0, %%ecx; div %%ecx"::);
-
-    // TODO port read & write defines out
-    int a = 10;
-    unsigned char p21 = inb(0x21);
-    unsigned char pA1 = inb(0xA1);
-
-    // TODO chr_drv, directory output is single archive file
-    // avoid linking all objs, some can be archive obj file
-
     nop();
     nop();
+    
+    while(1);
 }
 
