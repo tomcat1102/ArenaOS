@@ -6,6 +6,7 @@
 global startup_32
 global kernel_gdt
 global kernel_idt
+global pg_dir
 
 extern stack_start
 extern main

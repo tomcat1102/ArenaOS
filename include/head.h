@@ -8,5 +8,6 @@ typedef struct desc_struct {
 
 extern desc_table kernel_gdt;
 extern desc_table kernel_idt;
+extern unsigned long pg_dir[1024];
 
 #endif // HEAD_H
