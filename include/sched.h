@@ -76,6 +76,7 @@ struct task_struct
 #define _TSS(n) ((((unsigned long)n) << 4) + (FIRST_TSS_ENTRY << 3))
 #define _LDT(n) ((((unsigned long)n) << 4) + (FIRST_LDT_ENTRY << 3))
 
-
+#define ltr(n)  __asm__("ltr %%ax"::"a"(_TSS(n)))
+#define lldt(n) __asm__("lldt %%ax"::"a"(_LDT(n)))
 
 #endif // SCHED_H

@@ -70,6 +70,8 @@ void main(int argc, char *argv[], char* env[]) {
     // however, we still need to unmask interrupt bits in 8259 status ports
     sti(); 
 
+    move_to_user_mode();
+
     nop();
     nop();
 

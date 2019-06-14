@@ -5,6 +5,7 @@
 #include <asm/system.h>
 #include <sched.h>
 #include <mm.h>
+#include <head.h>
 
 // The 8253 programmable interval timer oscilates at 1193180 times per sec,
 // so for the PIT to generate 100 timer interrupt per second, it has to 
@@ -23,13 +24,27 @@ union task_union {              // task struct & stack space for task 0
 
 static union task_union init_task = {INIT_TASK};
 
+// Init first task, timer and set timer interrupt handler
 void sched_init(void)
 {
-                                
-    outb(0x36, 0x43);           // Initialize timer
+    // Set first task's descriptors in gdt
+    set_tss_desc(kernel_gdt + FIRST_TSS_ENTRY, &(init_task.task.tss));
+    set_ldt_desc(kernel_gdt + FIRST_LDT_ENTRY, &(init_task.task.ldt));
+
+
+    // Clear NT flags, no worry about Nested Task
+    __asm__("pushfl; andl $0xffffbfff, (%esp); popfl");
+
+    // Load first task's descriptors to tr and ldt regs
+    ltr(0);
+    lldt(0); 
+
+    // Initialize timer
+    outb(0x36, 0x43);           
     outb(LATCH && 0xff, 0x40);  // Set timer port 0x43 to binar mode 3 LSB/MSB
     outb(LATCH >> 8, 0x40);     // Send the LATCH
         
-    set_intr_gate(0x20, timer_interrupt);   // Set timer interrupt handler
-    outb(inb(0x21) & ~0x01, 0x21);          // Unmast timer interrupt signal
+    // Set timer interrupt handler & Unmask timer interrupt signal
+    set_intr_gate(0x20, timer_interrupt);
+    outb(inb(0x21) & ~0x01, 0x21);
 }
