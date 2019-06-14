@@ -72,6 +72,9 @@ void main(int argc, char *argv[], char* env[]) {
 
     move_to_user_mode();
 
+    // TODO 1. implement system call mechanism
+    // TODO 2. prepare to fork()!
+
     nop();
     nop();
 

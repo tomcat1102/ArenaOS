@@ -13,6 +13,7 @@
 #define LATCH (1193180 / HZ)
 
 extern void timer_interrupt(void);
+extern void system_call(void);
 
 long startup_time = 0;          // kernel startup time since 1970:0:0:0
 long volatile jiffies = 0;      // heartbeats since kernel starts 
@@ -24,7 +25,8 @@ union task_union {              // task struct & stack space for task 0
 
 static union task_union init_task = {INIT_TASK};
 
-// Init first task, timer and set timer interrupt handler
+// Init first task, timer. Set timer interrupt hanler and the entry routine that 
+// handles all system calls.
 void sched_init(void)
 {
     // Set first task's descriptors in gdt
@@ -47,4 +49,7 @@ void sched_init(void)
     // Set timer interrupt handler & Unmask timer interrupt signal
     set_intr_gate(0x20, timer_interrupt);
     outb(inb(0x21) & ~0x01, 0x21);
+
+    // Set system call entry
+    set_system_gate(0x80, system_call);
 }
