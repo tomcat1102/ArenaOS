@@ -72,8 +72,8 @@ void main(int argc, char *argv[], char* env[]) {
 
     move_to_user_mode();
 
-    // TODO 1. implement system call mechanism
-    // TODO 2. prepare to fork()!
+    __asm__("movl $2, %%eax; int $0x80"::);
+    // TODO prepare to fork()!
 
     nop();
     nop();
