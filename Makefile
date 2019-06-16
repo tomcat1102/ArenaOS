@@ -16,7 +16,8 @@ OS_BIN = os.bin
 
 INIT_OBJ = init/head.o init/main.o 
 KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o \
-	kernel/mktime.o kernel/sched.o kernel/syscall.o kernel/fork.o\
+	kernel/mktime.o kernel/sched.o kernel/syscall.o kernel/fork.o \
+	kernel/panic.o \
 	kernel/chr_drv/keyboard.o kernel/chr_drv/tty_io.o kernel/chr_drv/console.o
 LIB_OBJ = lib/errno.o	
 
