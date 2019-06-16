@@ -6,7 +6,9 @@
 global timer_interrupt
 global system_call
 global syscall_table
+
 extern jiffies
+extern find_empty_process
 
 nr_system_calls equ 4   ; Number of system calls in ArenaOS
 
@@ -42,9 +44,12 @@ system_call:
 
 ; some syscall entries are defined here. However, the real shit is in .c files.
 sys_fork:
-    nop
+    call find_empty_process     ; See fork.c. Return negative eax if not found.
+    test eax, eax               ; 'test' reserve eax value and if both are neg,
+    js _sys_fork_end            ; sign flag will be set and 'js' will jump.
     nop
     mov eax, 0
+_sys_fork_end:    
     ret
 
 sys_dummy:

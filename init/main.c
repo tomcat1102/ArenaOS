@@ -2,27 +2,33 @@
 #include <asm/port_io.h>
 #include <mm.h>
 
+// Define __LIBRARY__ for syscall invocation with inline assembly in unistd.h
+#define __LIBRARY__     
+#include <unistd.h>   
+// when fork() from task 0 to get init() running, we can't touch stack as that 
+// would cause 'Copy on Write'. However since calling fork() and pause() would
+// use stack, we mush avoid this by calling them with inline assembly.
+static __attribute__((always_inline)) __syscall0(int, fork);
+#undef __LIBRARY__
+// Add fork() declaration again to suppress compiler warning
+static inline int fork(void);
+
 extern int printk();
 extern void trap_init(void);
 extern void tty_init(void);
 extern void time_init(void);
 extern void sched_init(void);
+void init(void);
 
+// Some Infomation from setup.asm
 #define EXT_MEM_K       (*(unsigned short*)0x90002)
 #define DRIVE_INFO_P    ((struct drive_info*)0x90080)
 #define ORIG_ROOT_DEV   (*(unsigned short*)0x901FD)
 
-struct drive_info {
+// HD drive
+struct drive_info {     // Save 32 byte hard disk info from setup.asm
     char i[32];
 } drive;
-
-// user mode stack for task 0
-long user_stack[PAGE_SIZE >> 2];
-
-struct { 
-    long *esp;
-    short ss;
-} __attribute__((packed)) stack_start = { &user_stack[PAGE_SIZE >> 2], 0x10};
 
 /* Memory layout:
  * [0 - ?]              : mem for kernel, ? less than 640KB
@@ -72,12 +78,19 @@ void main(int argc, char *argv[], char* env[]) {
 
     move_to_user_mode();
 
-    __asm__("movl $2, %%eax; int $0x80"::);
-    // TODO prepare to fork()!
+    // TODO implement fork() in fork.c
+    if (fork()) {
+        init();
+    }
 
     nop();
     nop();
 
     while(1);
+}
+
+void init()
+{
+
 }
 

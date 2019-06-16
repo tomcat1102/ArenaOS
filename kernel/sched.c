@@ -15,15 +15,25 @@
 extern void timer_interrupt(void);
 extern void system_call(void);
 
+// Time
 long startup_time = 0;          // kernel startup time since 1970:0:0:0
 long volatile jiffies = 0;      // heartbeats since kernel starts 
 
+// Task
 union task_union {              // task struct & stack space for task 0
     struct task_struct task;    // the union size should be one page size, 4096
     char stack[PAGE_SIZE];
 };
+static union task_union init_task = {INIT_TASK}; // task 0, first task in our os
 
-static union task_union init_task = {INIT_TASK};
+long user_stack[PAGE_SIZE >> 2];                 // user mode stack for task 0
+struct {                        // stack descriptor for task 0's user mode stack
+    long *esp;
+    short ss;
+} __attribute__((packed)) stack_start = { &user_stack[PAGE_SIZE >> 2], 0x10};
+
+struct task_struct *task[NR_TASKS] = {&(init_task.task)}; // max of 64 task slot
+
 
 // Init first task, timer. Set timer interrupt hanler and the entry routine that 
 // handles all system calls.
@@ -32,6 +42,7 @@ void sched_init(void)
     // Set first task's descriptors in gdt
     set_tss_desc(kernel_gdt + FIRST_TSS_ENTRY, &(init_task.task.tss));
     set_ldt_desc(kernel_gdt + FIRST_LDT_ENTRY, &(init_task.task.ldt));
+    // No need to clear 'kernel_gdt[256]' and 'task[NR_TASKS]' as in linux 0.11. 
 
 
     // Clear NT flags, no worry about Nested Task

@@ -79,4 +79,7 @@ struct task_struct
 #define ltr(n)  __asm__("ltr %%ax"::"a"(_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a"(_LDT(n)))
 
+
+extern struct task_struct *task[NR_TASKS];
+
 #endif // SCHED_H
