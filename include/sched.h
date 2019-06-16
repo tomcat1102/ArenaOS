@@ -81,5 +81,6 @@ struct task_struct
 
 
 extern struct task_struct *task[NR_TASKS];
+extern struct task_struct *current;
 
 #endif // SCHED_H

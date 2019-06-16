@@ -33,7 +33,7 @@ struct {                        // stack descriptor for task 0's user mode stack
 } __attribute__((packed)) stack_start = { &user_stack[PAGE_SIZE >> 2], 0x10};
 
 struct task_struct *task[NR_TASKS] = {&(init_task.task)}; // max of 64 task slot
-
+struct task_struct *current = &(init_task.task);
 
 // Init first task, timer. Set timer interrupt hanler and the entry routine that 
 // handles all system calls.

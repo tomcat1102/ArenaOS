@@ -19,7 +19,10 @@ KERNEL_OBJ = kernel/printk.o kernel/traps.o kernel/exceptions.o \
 	kernel/mktime.o kernel/sched.o kernel/syscall.o kernel/fork.o \
 	kernel/panic.o \
 	kernel/chr_drv/keyboard.o kernel/chr_drv/tty_io.o kernel/chr_drv/console.o
+MM_OBJ = mm/memory.o
 LIB_OBJ = lib/errno.o	
+
+OS_OBJ = $(INIT_OBJ) $(KERNEL_OBJ) $(MM_OBJ) $(LIB_OBJ)
 
 # export variables to make in each directory
 export CC
@@ -38,11 +41,12 @@ init:
 
 kernel:
 	cd kernel && make
-
+mm:
+	cd mm && make
 lib:
 	cd lib && make
 
-os.elf: $(INIT_OBJ) $(KERNEL_OBJ) $(LIB_OBJ)
+os.elf: $(OS_OBJ)
 	cd boot && make debug
 	$(LD) -o $@ --script config/linker.ld $^
 
@@ -54,6 +58,8 @@ $(INIT_OBJ): init
 	@
 $(KERNEL_OBJ): kernel
 	@
+$(MM_OBJ): mm
+	@
 $(LIB_OBJ):lib
 	@
 
@@ -63,7 +69,7 @@ $(LIB_OBJ):lib
 
 # Linking OS_BIN with lib objects is ok. They are pretty small.
 
-$(OS_BIN): $(INIT_OBJ) $(KERNEL_OBJ) $(LIB_OBJ)
+$(OS_BIN): $(OS_OBJ)
 	$(LD) --script config/linker.ld -o $@ $^  --oformat binary
 
 # Main make targets
@@ -80,6 +86,7 @@ clean:
 	rm -rf init/*.o init/*.elf
 	rm -rf kernel/*.o kernel/*.elf
 	rm -rf kernel/chr_drv/*.o kernel/chr_drv/*.elf
+	rm -rf mm/*.o mm/*.elf
 	rm -rf lib/*.o lib/*.elf
 
 # Lines of code in this repo
@@ -90,4 +97,4 @@ loc:
 xxd:
 	xxd -s +1024 -o -1024 ArenaOS.img | more	
 
-.PHONY: loc clean debug boot init kernel lib
+.PHONY: loc clean debug boot init kernel mm lib

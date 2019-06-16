@@ -14,6 +14,7 @@ static __attribute__((always_inline)) __syscall0(int, fork);
 static inline int fork(void);
 
 extern int printk();
+extern void mem_init(long, long);
 extern void trap_init(void);
 extern void tty_init(void);
 extern void time_init(void);
@@ -64,13 +65,14 @@ void main(int argc, char *argv[], char* env[]) {
     }
     
     // Init different parts of kernel, note some parts should be inited first 
-    // due to dependency. memory should be init first!
+    // due to dependency. E.g. mem_init() should be init first, sched_init() 
+    // must be after time_init().
 
-    // mem_init()   // init main memory area
-    trap_init();    // init trap gates and some system gates
-    tty_init();     // init tty devices and related interrupts
-    time_init();    // set kernel startup 
-    sched_init();   // init sched and prepare first task. Must after time_init.
+    mem_init(mem_beg, mem_end);     // init main memory area    
+    trap_init();                    // init trap gates and some system gates
+    tty_init();                     // init tty devices and related interrupts
+    time_init();                    // set kernel startup 
+    sched_init();                   // init sched and prepare first task
 
     // sti() just change interrupt flag in eflags
     // however, we still need to unmask interrupt bits in 8259 status ports
