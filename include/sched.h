@@ -98,12 +98,6 @@ struct task_struct
             :); \
     __base; \
 })
-// TODO update Readme.md "gcc inline asm: "=&d" v.s "=d"
-/*
-break copy_mem
-continue
-clear copy_mem
-*/
 
 // Set base of segment identified by segment descriptor in ldt
 #define set_base(desc, base) _set_base(((char*)&(desc)), base)

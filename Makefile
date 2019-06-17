@@ -77,7 +77,7 @@ run: $(IMG)
 	$(QEMU) -m size=16 -mem-prealloc -drive format=raw,file=$(IMG)
 
 debug: $(IMG) os.elf
-	$(QEMU) -m size=16 -mem-prealloc -s -S -rtc base=localtime,clock=vm -drive format=raw,file=$(IMG) & 
+	$(QEMU) -m size=16 -mem-prealloc -s -S -realtime mlock=off -rtc base=localtime,clock=vm -drive format=raw,file=$(IMG) & 
 	$(GDB) --silent --command=config/gdb_commands.txt
 	
 clean:

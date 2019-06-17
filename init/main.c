@@ -68,7 +68,7 @@ void main(int argc, char *argv[], char* env[]) {
     // due to dependency. E.g. mem_init() should be init first, sched_init() 
     // must be after time_init().
 
-    mem_init(mem_beg, mem_end);     // init main memory area    
+    mem_init(mem_beg, mem_end);     // init main memory asirea    
     trap_init();                    // init trap gates and some system gates
     tty_init();                     // init tty devices and related interrupts
     time_init();                    // set kernel startup 

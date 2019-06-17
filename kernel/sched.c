@@ -53,8 +53,8 @@ void sched_init(void)
     lldt(0); 
 
     // Initialize timer
-    outb(0x36, 0x43);           
-    outb(LATCH && 0xff, 0x40);  // Set timer port 0x43 to binar mode 3 LSB/MSB
+    outb_p(0x36, 0x43);           
+    outb_p(LATCH & 0xff, 0x40);  // Set timer port 0x43 to binar mode 3 LSB/MSB
     outb(LATCH >> 8, 0x40);     // Send the LATCH
         
     // Set timer interrupt handler & Unmask timer interrupt signal
