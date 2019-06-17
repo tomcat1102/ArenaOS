@@ -12,6 +12,10 @@
 #define MAP_NR(paddr) (((paddr) - LOW_MEM) >> 12) 
 #define USED 100
 
+// Refresh TLB by setting cr3 to itself
+#define invalidate() \
+__asm__("movl %%eax, %%cr3"::"a"(0))
+
 static long HIGH_MEM = 0;
 
 // Memory map for memeory between 1MB and 16MB. Physical memory available can be
@@ -36,10 +40,6 @@ void mem_init(long start_mem, long end_mem)
     while (end_mem-- > 0) { // Set pages after buffer (main memory area) unused
         mem_map[i++] = 0;
     }
-
-    // TODO 1. We must first implememt and test Memory management before fork()
-    void mem_test();
-    mem_test();
 }
 
 // Get a free physical page by finding 0 byte in mem_mep[].
@@ -67,6 +67,7 @@ unsigned long get_free_page()
     return __res;
 }
 
+// Free the physical page at addr by resetting corrosponding byte in mem_map[]
 void free_page(unsigned long addr)
 {
     if (addr < LOW_MEM) return;
@@ -80,18 +81,60 @@ void free_page(unsigned long addr)
 }
 
 
-void mem_test()
+// Copy linear memory address space spanned by page directory entries in units
+// of 4MB from source to destination. Note when from = 0, we are copying kernel 
+// space for the first fork(). We don't copy 4MB linear space instead, we copy 
+// just first 640KB (That's still large than current kernel size). And we don't
+// allow Copy-on-write in kernel space (the first 1MB) and let task 0 & 1 share
+// the kernel pages.
+int copy_page_tables(unsigned long from, unsigned long to, unsigned long size)
 {
-    unsigned long idx1, idx2, idx3;
-    idx1 = get_free_page();
-    idx2 = get_free_page();
-    idx3 = get_free_page();
+    if ((from & 0x3fffff) || (to & 0x3fffff))
+        panic("copy_paga_tables called with wrong alignment");
+    
+    // Understood :)
+    unsigned long *from_dir = (unsigned long *)((from >> 20) & 0xffc); 
+    unsigned long *to_dir   = (unsigned long *)((to >> 20) & 0xffc);
+    size = (size + 0x3fffff) >> 22;
 
-    free_page(idx2);
-    free_page(idx1);
-    free_page(idx3);
+    unsigned long *from_page_table;
+    unsigned long *to_page_table;
+    unsigned long nr;
+    unsigned long this_page;
 
-    free_page(idx3);
+    // Copy page direcoty entris one by one
+    for(; size-- > 0; from_dir ++, to_dir ++) {
+        if (1 & *to_dir)        // Page can't exist in child task                
+            panic("copy_page_tables: page already exists");
+        if (! (1 & *from_dir))  // Page not exits ok in parent task, skip copy
+            continue;   
+
+        from_page_table = (unsigned long *)(0xfffff000 & *from_dir);
+        if(! (to_page_table = (unsigned long *)get_free_page()))
+            panic("copy_page_tables: OOM");
+        // Set target page directory entry
+        *to_dir = ((unsigned long)to_page_table | 7); // present, r/w, user page
+        nr = (from == 0) ? 0xA0 : 1024; // Copy 160 page table entries if from 0
+        for(; nr-- > 0; from_page_table ++, to_page_table ++) {
+            this_page = *from_page_table;
+            if (! (1 & this_page))  // page table entry not exist, ok, skip copy
+                continue;
+            this_page &= ~2; // Read only page for child. Always do so.
+            *to_page_table = this_page;
+            // Is this page from user process space, not kernel ?
+            if (this_page > LOW_MEM) {
+                // Read only page for parent.
+                // Now COW ok! Either child or parent process's write cause COW
+                *from_page_table = this_page; 
+                // Increase page reference count in mem_map[]
+                this_page -= LOW_MEM;
+                this_page >>= 12;
+                mem_map[this_page] ++;
+            }
+        }
+    }
+    invalidate();
+    return 0;
 }
 
 

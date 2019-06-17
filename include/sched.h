@@ -39,7 +39,8 @@ struct tss_struct
 struct task_struct
 {
     long state;             // -1 unrunnable, 0 runnable, >0 stopped
-    long conter;            // time slice
+    long counter;           // time slice
+    long priority;          // set to counter
     // various other fields. Currently we only use what can be really be used.
     int exit_code;
     // TODO start_code = 0 or 64MB * TASK_INDEX ?
@@ -56,7 +57,7 @@ struct task_struct
 };
 
 #define INIT_TASK \
-{   0,15,0, \
+{   0,15,15,0, \
     0,0,0,0,0,\
     0,-1,\
     0,0,\
@@ -64,7 +65,7 @@ struct task_struct
     {{0, 0},{0x9f, 0xc0fa00}, {0x9f, 0xc0f200}},\
     {0, PAGE_SIZE + (long)&init_task, 0x10, 0,0,0,0, (long)&pg_dir,\
     0,0,0,0,0,0,0,0,\
-    0,0,0x17,0x17,0x17,0x17,0x17,\
+    0,0,0x17,0x17,0x17,0x17,0x17,0x17,\
     _LDT(0), 0x80000000}\
 }
 
@@ -79,8 +80,46 @@ struct task_struct
 #define ltr(n)  __asm__("ltr %%ax"::"a"(_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a"(_LDT(n)))
 
+// Get length of segment identified by segment selector
+#define get_limit(segment_selector) ({ \
+        unsigned long __limit; \
+        __asm__("lsll %1, %0; incl %0":"=r"(__limit):"r"(segment_selector)); \
+        __limit; })
+// Get base of segment identified by segment descriptor in ldt
+#define get_base(desc) _get_base((char*)(&desc))
+#define _get_base(addr) ({ \
+    unsigned long __base; \
+    __asm__("movb %3, %%dh;" \
+            "movb %2, %%dl;" \
+            "shll $16, %%edx;" \
+            "movw %1, %%dx;" \
+            :"=&d"(__base) \
+            :"m"(*((addr) + 2)), "m"(*((addr) + 4)), "m"(*((addr) + 7)) \
+            :); \
+    __base; \
+})
+// TODO update Readme.md "gcc inline asm: "=&d" v.s "=d"
+/*
+break copy_mem
+continue
+clear copy_mem
+*/
+
+// Set base of segment identified by segment descriptor in ldt
+#define set_base(desc, base) _set_base(((char*)&(desc)), base)
+#define _set_base(addr, base) ({ \
+    __asm__("movw %%dx, %0;" \
+            "rorl $16, %%edx;" \
+            "movb %%dl, %%1;" \
+            "movb %%dh, %%2;" \
+            ::"m"(*((addr) + 2)), "m"(*((addr) + 4)), "m"(*((addr) + 7)), \
+            "d"(base)); \
+})
+
+
 
 extern struct task_struct *task[NR_TASKS];
 extern struct task_struct *current;
+extern long volatile jiffies;
 
 #endif // SCHED_H
