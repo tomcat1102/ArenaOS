@@ -112,10 +112,15 @@ void schedule()
     switch_to(target);
 }
 
+
+extern void timer_print();
+
 // Invoked at every system tick in timer_interrupt of syscall.asm
 // It accumulate ticks for task and reschedule if run out of time slice
 void do_timer(long cpl)
 {
+    timer_print();
+
     if (cpl) {              // accumulate ticks for task in user or kernel mode
         current->utime ++;  // however, I find it not very accurate.
     } else {

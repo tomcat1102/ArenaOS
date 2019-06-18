@@ -45,7 +45,7 @@ struct task_struct
     long priority;          // set to counter
     // various other fields. Currently we only use what can be really be used.
     int exit_code;
-    // TODO start_code = 0 or 64MB * TASK_INDEX ?
+    // start_code = 0 for task 0, 64MB for task 1 ... 
     unsigned long start_code, end_code, end_data, brk, start_stack;
     // task id(process id) and its parent process id
     long pid, father;
