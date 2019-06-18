@@ -79,7 +79,7 @@ void schedule()
         target = 0;
         counter = -1;
 
-        while (--idx) {
+        while (--idx >= 0) {    // TODO test so task 0 may run
             if (! *(--p))   // skip empty task slot
                 continue;
             // Set target if current task is 'running' with bigger counter. Note 
@@ -89,29 +89,27 @@ void schedule()
                 target = idx;
                 counter = (*p)->counter;
             }
+        }
+        // We found a task with biggest non-zero counter to run, switch!
+        if (counter) break; 
 
-            // We found a task with biggest non-zero counter to run, switch!
-            if (counter) break; 
+        // Since all tasks have no counter or not runnable, reset them
+        // formula: 
+        //      new_counter = current_conuter /2 + priority
+        //
+        // This way, if a task is sleeping, its counter will matter and 
+        // account half to its new counter. So when it wakes up and ready
+        // to run, it can run a bit longer. Besides these sleeping task,
+        // the running task will have their new counter reset to its
+        // priority, so the task with biggest priority will run first.
 
-            // Since all tasks have no counter or not runnable, reset them
-            // formula: 
-            //      new_counter = current_conuter /2 + priority
-            //
-            // This way, if a task is sleeping, its counter will matter and 
-            // account half to its new counter. So when it wakes up and ready
-            // to run, it can run a bit longer. Besides these sleeping task,
-            // the running task will have their new counter reset to its
-            // priority, so the task with biggest priority will run first.
-
-            for (p = &LAST_TASK; p > &FIRST_TASK; p --) {
-                if (*p) {
-                    (*p)->counter = ((*p)->counter >> 1) + (*p)->priority;
-                }
+        for (p = &LAST_TASK; p >= &FIRST_TASK; p --) {
+            if (*p) {
+                (*p)->counter = ((*p)->counter >> 1) + (*p)->priority;
             }
         }
-
-        switch_to(target);
     }
+    switch_to(target);
 }
 
 // Invoked at every system tick in timer_interrupt of syscall.asm
