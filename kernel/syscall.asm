@@ -26,6 +26,7 @@ global syscall_table
 extern jiffies
 extern find_empty_process
 extern copy_process
+extern do_timer
 
 nr_system_calls equ 4   ; Number of system calls in ArenaOS
 
@@ -100,19 +101,22 @@ timer_interrupt:
     push edx
     push ecx
     push ebx
-    push eax        ;push one more val to balance,it's like ret val from syscall
+    push eax        ; push one more val as ret val from syscall to balance stack
     mov eax, 0x10   ; update ds, es & fs properly
     mov ds, ax
-   ; mov es, ax
-    mov eax, 17
-    ;mov fs, ax
-
-    inc dword [jiffies] ; increase system ticks 
-    mov eax, 0xDEADFADE
-    
-
+    mov es, ax
+    mov eax, 0x17
+    mov fs, ax
+   
     mov al, 0x20
     out 0x20, al    ; Send EOI to 8259
 
+    inc dword [jiffies] ; Increase system ticks 
+
+    mov eax, [esp + _CS]; Push privilege level in cs as param to do_timer
+    and eax, 3
+    push eax
+    call do_timer
+    add esp, 4      ; Don't pop to eax, avoid overwritting ret val in eax
 
     jmp ret_from_syscall

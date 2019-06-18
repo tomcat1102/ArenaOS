@@ -7,6 +7,8 @@
 #define HZ 100      // Timer interrupt signal every 10ms, our os heartbeat
 
 #define NR_TASKS 64 // Max num of tasks(processes) in the os
+#define FIRST_TASK  task[0]
+#define LAST_TASK   task[NR_TASKS - 1]
 
 // Task can be in one of these states. 
 #define TASK_RUNNING            0
@@ -79,6 +81,20 @@ struct task_struct
 
 #define ltr(n)  __asm__("ltr %%ax"::"a"(_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a"(_LDT(n)))
+
+// Switch to task n!
+#define switch_to(n) { \
+    struct {long a, b;} __tmp; \
+    __asm__("cmpl %%ecx, current;" \
+            "je 1f;" \
+            "movw %%dx, %1;" \
+            "xchgl %%ecx, current;" \
+            "ljmp *%0;" \
+            "1:" \
+            ::"m"(*&__tmp.a), "m"(*&__tmp.b), \
+            "d"(_TSS(n)), "c"((long)task[n])); \
+}
+
 
 // Get length of segment identified by segment selector
 #define get_limit(segment_selector) ({ \

@@ -68,7 +68,7 @@ void main(int argc, char *argv[], char* env[]) {
     // due to dependency. E.g. mem_init() should be init first, sched_init() 
     // must be after time_init().
 
-    mem_init(mem_beg, mem_end);     // init main memory asirea    
+    mem_init(mem_beg, mem_end);     // init main memory area    
     trap_init();                    // init trap gates and some system gates
     tty_init();                     // init tty devices and related interrupts
     time_init();                    // set kernel startup 
@@ -80,8 +80,7 @@ void main(int argc, char *argv[], char* env[]) {
 
     move_to_user_mode();
 
-    // TODO implement fork() in fork.c
-    if (fork()) {
+    if (!fork()) {
         init();
     }
 
@@ -91,8 +90,14 @@ void main(int argc, char *argv[], char* env[]) {
     while(1);
 }
 
+int var_in_640KB = 100;
+
 void init()
 {
+    nop();
+    int a = 0xDEADCCCD; // init
+    var_in_640KB = 200; // raise page fault?
 
+    while(1);
 }
 

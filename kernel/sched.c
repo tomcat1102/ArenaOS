@@ -64,3 +64,68 @@ void sched_init(void)
     // Set system call entry
     set_system_gate(0x80, system_call);
 }
+
+void schedule()
+{
+    struct task_struct **p; // points to task slot
+    int idx;                // idx into task slot
+    int target;             // idx of target task to switch to 
+    int counter;            // max counter found in tasks, which need schedule
+
+    while (1) {             // Loop until we find the task with biggest counter
+        // Reinitialized these each time loop
+        p = &task[NR_TASKS];
+        idx = NR_TASKS;      
+        target = 0;
+        counter = -1;
+
+        while (--idx) {
+            if (! *(--p))   // skip empty task slot
+                continue;
+            // Set target if current task is 'running' with bigger counter. Note 
+            // that bigger connter implies that the task hasn't been running 
+            // very often, so we should switch to it to let it run.
+            if ((*p)->state == TASK_RUNNING && (*p)->counter > counter) {
+                target = idx;
+                counter = (*p)->counter;
+            }
+
+            // We found a task with biggest non-zero counter to run, switch!
+            if (counter) break; 
+
+            // Since all tasks have no counter or not runnable, reset them
+            // formula: 
+            //      new_counter = current_conuter /2 + priority
+            //
+            // This way, if a task is sleeping, its counter will matter and 
+            // account half to its new counter. So when it wakes up and ready
+            // to run, it can run a bit longer. Besides these sleeping task,
+            // the running task will have their new counter reset to its
+            // priority, so the task with biggest priority will run first.
+
+            for (p = &LAST_TASK; p > &FIRST_TASK; p --) {
+                if (*p) {
+                    (*p)->counter = ((*p)->counter >> 1) + (*p)->priority;
+                }
+            }
+        }
+
+        switch_to(target);
+    }
+}
+
+// Invoked at every system tick in timer_interrupt of syscall.asm
+// It accumulate ticks for task and reschedule if run out of time slice
+void do_timer(long cpl)
+{
+    if (cpl) {              // accumulate ticks for task in user or kernel mode
+        current->utime ++;  // however, I find it not very accurate.
+    } else {
+        current->stime ++;
+    }
+
+    if ((--current->counter) > 0) return;   // return if it still has time slice
+    current->counter = 0;       // counter may be less thant 0, reset it to 0
+    if (!cpl) return;           // Note we don't reschedule as it is non-
+    schedule();                 // preemptive in kernel mode!
+}
